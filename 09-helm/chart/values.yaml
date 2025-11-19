@@ -1,0 +1,55 @@
+namespace:
+  name: file-server
+  create: true
+
+image:
+  repository: ghcr.io/jung-geun/simple-file-server
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+imagePullSecrets: []
+serviceAccount:
+  create: false
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+
+config:
+  port: 3001
+  logPath: /var/log/app.log
+  uploadDir: /var/uploads
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+nodeSelector: {}
+
+tolerations: []
+affinity: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3001
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.tls: "false"
+  hosts:
+    - host: file.test.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []

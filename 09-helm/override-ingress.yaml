@@ -1,0 +1,10 @@
+# macOS 환경에서 다른 이미지를 쓰고 싶다면 다음 태그를 활성화하세요.
+# image:
+#   tag: macos.1.0
+
+ingress:
+  hosts:
+  - host: staging.file.test.com
+    paths:
+    - path: /
+      pathType: Prefix

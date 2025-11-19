@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "simple-file-server.fullname" . }}
+  namespace: {{ include "simple-file-server.namespace" . }}
+  labels:
+{{ include "simple-file-server.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+{{ include "simple-file-server.selectorLabels" . | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "simple-file-server.selectorLabels" . | indent 8 }}
+{{- with .Values.podAnnotations }}
+      annotations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+    spec:
+      serviceAccountName: {{ include "simple-file-server.serviceAccountName" . }}
+{{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 6 }}
+{{- end }}
+{{- with .Values.podSecurityContext }}
+      securityContext:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      containers:
+        - name: {{ include "simple-file-server.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.config.port }}
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "simple-file-server.configName" . }}
+                  key: PORT
+            - name: LOG_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "simple-file-server.configName" . }}
+                  key: LOG_PATH
+            - name: UPLOAD_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "simple-file-server.configName" . }}
+                  key: UPLOAD_DIR
+{{- with .Values.securityContext }}
+          securityContext:
+{{ toYaml . | indent 12 }}
+{{- end }}
+{{- with .Values.resources }}
+          resources:
+{{ toYaml . | indent 12 }}
+{{- end }}
