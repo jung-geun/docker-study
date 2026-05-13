@@ -13,7 +13,7 @@ permissions:
   packages: write
 
 jobs:
-  build-and-push:
+  build-simple-file-server:
     runs-on: ubuntu-latest
 
     steps:
@@ -61,6 +61,58 @@ jobs:
         with:
           context: ./simple-file-server
           file: ./simple-file-server/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  build-simple-db-server:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Detect relevant changes
+        id: changes
+        uses: tj-actions/changed-files@v45
+        with:
+          files: |
+            simple-db-server/**
+            .github/workflows/docker-publish.yml
+
+      - name: Skip build when no relevant changes
+        if: github.ref_type == 'branch' && steps.changes.outputs.any_changed == 'false'
+        run: echo "No relevant changes detected on main; skipping image publish."
+
+      - name: Set up Docker Buildx
+        if: github.ref_type == 'tag' || steps.changes.outputs.any_changed == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.ref_type == 'tag' || steps.changes.outputs.any_changed == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        if: github.ref_type == 'tag' || steps.changes.outputs.any_changed == 'true'
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/jung-geun/simple-db-server
+          tags: |
+            type=raw,value=latest
+            type=ref,event=tag
+            type=sha
+
+      - name: Build and push image
+        if: github.ref_type == 'tag' || steps.changes.outputs.any_changed == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./simple-db-server
+          file: ./simple-db-server/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
