@@ -50,8 +50,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata (amd64)
-        id: meta-amd64
+      - name: Extract Docker metadata
+        id: meta
         if: github.ref_type == 'tag' || steps.changes.outputs.any_changed == 'true'
         uses: docker/metadata-action@v5
         with:
@@ -60,42 +60,17 @@ jobs:
             type=raw,value=latest
             type=ref,event=tag
             type=sha
-            type=ref,event=tag,suffix=-amd64
-            type=sha,suffix=-amd64
 
-      - name: Build and push image (amd64)
+      - name: Build and push image
         if: github.ref_type == 'tag' || steps.changes.outputs.any_changed == 'true'
         uses: docker/build-push-action@v6
         with:
           context: ./simple-file-server
           file: ./simple-file-server/Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta-amd64.outputs.tags }}
-          labels: ${{ steps.meta-amd64.outputs.labels }}
-          provenance: true
-          sbom: true
-
-      - name: Extract Docker metadata (arm64)
-        id: meta-arm64
-        if: github.ref_type == 'tag' || steps.changes.outputs.any_changed == 'true'
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/jung-geun/simple-file-server
-          tags: |
-            type=ref,event=tag,suffix=-arm64
-            type=sha,suffix=-arm64
-
-      - name: Build and push image (arm64)
-        if: github.ref_type == 'tag' || steps.changes.outputs.any_changed == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: ./simple-file-server
-          file: ./simple-file-server/Dockerfile
-          platforms: linux/arm64
-          push: true
-          tags: ${{ steps.meta-arm64.outputs.tags }}
-          labels: ${{ steps.meta-arm64.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           provenance: true
           sbom: true
 
