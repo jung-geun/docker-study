@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: simple-file-server-config
-  namespace: 06-volume
+  namespace: volume
 data:
   PORT: "3001"
   LOG_PATH: "/var/log/app/app.log"
@@ -12,7 +12,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: simple-file-server
-  namespace: 06-volume
+  namespace: volume
 spec:
   replicas: 3
   selector:
@@ -73,7 +73,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: simple-file-server
-  namespace: 06-volume
+  namespace: volume
 spec:
   type: NodePort
   selector:

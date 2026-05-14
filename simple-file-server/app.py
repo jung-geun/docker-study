@@ -12,9 +12,9 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 app = FastAPI(title="Simple File Server")
 
-PORT = int(os.getenv("PORT", "3000"))
-UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "/tmp/uploads")).resolve()
-LOG_FILE = Path(os.getenv("LOG_FILE", "/var/log/file-server.log")).resolve()
+PORT = int(os.getenv("PORT", "3001"))
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "/var/uploads")).resolve()
+LOG_FILE = Path(os.getenv("LOG_PATH", "/var/log/app.log")).resolve()
 
 # Ensure the upload directory exists before any request handling.
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -189,6 +189,11 @@ async def download_file(filename: str) -> FileResponse:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found.")
 
     return FileResponse(path=file_path, filename=safe_name)
+
+
+@app.get("/health")
+async def health() -> dict:
+    return {"status": "ok"}
 
 
 @app.get("/files")

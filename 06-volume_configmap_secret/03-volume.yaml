@@ -2,7 +2,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: upload-pv
-  namespace: 06-volume
+  namespace: volume
 spec:
   capacity:
     storage: 10Gi
@@ -18,7 +18,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: upload-pvc
-  namespace: 06-volume
+  namespace: volume
 spec:
   accessModes:
     - ReadWriteOnce

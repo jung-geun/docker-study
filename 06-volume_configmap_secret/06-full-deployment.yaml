@@ -1,17 +1,20 @@
-# 1. ConfigMap - Simple File Server 포트 설정
+# 1. ConfigMap - Simple File Server 설정
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: simple-file-server-config
+  namespace: volume
 data:
   PORT: "3001"
   LOG_PATH: "/var/log/app/app.log"
+  UPLOAD_DIR: "/var/uploads"
 ---
 # 2. Secret - MySQL 비밀번호
 apiVersion: v1
 kind: Secret
 metadata:
   name: mysql-secret
+  namespace: volume
 type: Opaque
 stringData:
   MYSQL_ROOT_PASSWORD: rootPassword123!
@@ -24,6 +27,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
+  namespace: volume
   labels:
     app: mysql
 spec:
@@ -75,7 +79,13 @@ spec:
                 - SELECT 1
             initialDelaySeconds: 10
             periodSeconds: 5
-
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
       volumes:
         - name: mysql-storage
           hostPath:
@@ -87,6 +97,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysql
+  namespace: volume
 spec:
   selector:
     app: mysql
@@ -100,6 +111,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: simple-file-server
+  namespace: volume
   labels:
     app: simple-file-server
 spec:
@@ -116,8 +128,8 @@ spec:
         kubernetes.io/hostname: "worker"
       containers:
         - name: simple-file-server
-          image: ghcr.io/jung-geun/simple-file-server:1.0
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/jung-geun/simple-file-server:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3001
           env:
@@ -139,6 +151,8 @@ spec:
           volumeMounts:
             - name: log-storage
               mountPath: /var/log/app
+            - name: upload-storage
+              mountPath: /var/uploads
           livenessProbe:
             httpGet:
               path: /health
@@ -158,11 +172,14 @@ spec:
             limits:
               cpu: "250m"
               memory: "256Mi"
-
       volumes:
         - name: log-storage
           hostPath:
             path: /tmp/flask-logs
+            type: DirectoryOrCreate
+        - name: upload-storage
+          hostPath:
+            path: /tmp/uploads
             type: DirectoryOrCreate
 ---
 # 6. Simple File Server Service
@@ -170,6 +187,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: simple-file-server
+  namespace: volume
 spec:
   type: NodePort
   selector:
@@ -178,3 +196,68 @@ spec:
     - port: 3001
       targetPort: 3001
       nodePort: 30001
+---
+# 7. Flask App Deployment (simple-db-server) - Secret으로 DB 접속 정보 주입
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-app
+  namespace: volume
+  labels:
+    app: flask
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flask
+  template:
+    metadata:
+      labels:
+        app: flask
+    spec:
+      containers:
+        - name: flask
+          image: ghcr.io/jung-geun/simple-db-server:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: MYSQL_HOST
+              value: mysql
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_DATABASE
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+---
+# 8. Flask App Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-app
+  namespace: volume
+spec:
+  type: NodePort
+  selector:
+    app: flask
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30000

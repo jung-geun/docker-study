@@ -9,5 +9,5 @@ image:
 #     - path: /
 #       pathType: Prefix
 
-nodeSelector:
-  kubernetes.io/hostname: "worker-1" # 각 노드의 호스트네임에 맞게 수정
+# nodeSelector:
+#   kubernetes.io/hostname: "worker-1" # 각 노드의 호스트네임에 맞게 수정
